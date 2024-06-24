@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import concurrent.futures
 import numpy as np
-
+import dask.dataframe as dd
 class con_colors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -20,6 +20,7 @@ def load_data():
     trips_full_data = pd.read_csv('data/Trips_Full_Data.csv')
 
     print(f"{con_colors.OKCYAN} Loading data from CSV files..." + con_colors.ENDC)
+
     return trips_by_distance, trips_full_data
 
 # function to analyze population data
@@ -52,15 +53,13 @@ def visualize_trip_data(df):
     plt.tight_layout()
     plt.show()
 
-# function to simulate parallel processing
-def parallel_processing(df, num_processors):
-    # Function to simulate data processing (e.g., summing up a column)
-    def process_chunk(chunk):
-        return chunk['Number of Trips'].sum()
+def process_chunk(chunk):
+    return chunk['Number of Trips'].sum()
 
+def parallel_processing(df, num_processors):
     with concurrent.futures.ProcessPoolExecutor(max_workers=num_processors) as executor:
         results = list(executor.map(process_chunk, np.array_split(df, num_processors)))
-    print(f"Total trips processed with {con_colors.OKCYAN, num_processors} processors: {con_colors.OKGREEN} {sum(results)}" + con_colors.ENDC)
+    print(f"Total trips processed with {num_processors} processors: {sum(results)}")
 
 # main function to run the program
 def main():
@@ -68,8 +67,10 @@ def main():
     analyze_population_data(trips_by_distance)
     identify_significant_trip_dates(trips_full_data)
     visualize_trip_data(trips_full_data)
-    parallel_processing(trips_full_data, 10)
-    parallel_processing(trips_full_data, 20)
+
+    df = pd.DataFrame(trips_by_distance)
+    parallel_processing(df, 10)
+    parallel_processing(df, 20)
 
 if __name__ == "__main__":
     main()
